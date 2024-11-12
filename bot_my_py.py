@@ -1,4 +1,6 @@
 import telebot
+import sys
+sys.path.append('test_bot/config.py')
 from config import botkey
 bot = telebot.TeleBot(botkey)
 @bot.message_handler(commands=['start'])
