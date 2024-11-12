@@ -37,8 +37,7 @@ def start_game(message):
         players = {}  # Сбросим список игроков
         deck = [f"{rank}{suit}" for suit in suits for rank in ranks]  # Перемешиваем колоду
         random.shuffle(deck)
-        bot.send_message(message.chat.id, "Игра началась! Введите /join чтобы присоединиться.")
-        bot.send_message(message.chat.id, "Когда все игроки присоединятся, нажмите 'Играть в покер' для раздачи карт.")
+        bot.send_message(message.chat.id, "Игра началась! Введите /join, чтобы присоединиться. Когда все игроки будут готовы, используйте /ready для начала раздачи карт.")
 
 @bot.message_handler(commands=['join'])
 def join_game(message):
@@ -57,6 +56,23 @@ def notify_players_joined():
     player_names = [info["name"] for info in players.values()]
     bot.send_message(list(players.keys())[0], f"Игроки, присоединившиеся к игре: {', '.join(player_names)}")
 
+@bot.message_handler(commands=['ready'])
+def start_deal(message):
+    global players, game_in_progress
+    if not game_in_progress:
+        bot.send_message(message.chat.id, "Сначала начните игру, нажав 'Играть в покер'.")
+        return
+    if len(players) < 2:
+        bot.send_message(message.chat.id, "Для игры необходимо минимум два игрока!")
+        return
+    
+    # Раздаем каждому игроку по две карты
+    for player_id, player_info in players.items():
+        player_info["hand"] = [deck.pop(), deck.pop()]
+        hand = ", ".join(player_info["hand"])
+        bot.send_message(player_id, f"Ваши карты: {hand}")
+    bot.send_message(message.chat.id, "Карты разданы! Для завершения игры нажмите 'Завершить игру'.")
+
 @bot.message_handler(func=lambda message: message.text == 'Завершить игру')
 def end_game(message):
     global game_in_progress, players
@@ -67,23 +83,9 @@ def end_game(message):
         players = {}
         bot.send_message(message.chat.id, "Игра завершена! Нажмите 'Играть в покер' для новой игры.", reply_markup=create_keyboard())
 
-@bot.message_handler(func=lambda message: message.text == 'Играть в покер' and game_in_progress)
-def deal_cards(message):
-    if not game_in_progress:
-        bot.send_message(message.chat.id, "Сначала начните игру, нажав 'Играть в покер'.")
-        return
-    if len(players) < 2:
-        bot.send_message(message.chat.id, "Для игры необходимо минимум два игрока!")
-        return
-    # Раздаем каждому игроку по две карты
-    for player_id, player_info in players.items():
-        player_info["hand"] = [deck.pop(), deck.pop()]
-        hand = ", ".join(player_info["hand"])
-        bot.send_message(player_id, f"Ваши карты: {hand}")
-    bot.send_message(message.chat.id, "Карты разданы! Для завершения игры нажмите 'Завершить игру'.")
-
 @bot.message_handler(commands=['showdown'])
 def showdown(message):
+    global game_in_progress
     if not game_in_progress:
         bot.send_message(message.chat.id, "Сначала начните игру, нажав 'Играть в покер'.")
         return
