@@ -42,14 +42,20 @@ def start_game(message):
 
 @bot.message_handler(commands=['join'])
 def join_game(message):
+    global players
     if not game_in_progress:
         bot.send_message(message.chat.id, "Сначала начните игру, нажав 'Играть в покер'.")
         return
     if message.from_user.id in players:
-        bot.send_message(message.chat.id, "Вы уже присоединились!")
+        bot.send_message(message.chat.id, f"{message.from_user.first_name}, вы уже присоединились!")
     else:
         players[message.from_user.id] = {"name": message.from_user.first_name, "hand": []}
         bot.send_message(message.chat.id, f"{message.from_user.first_name} присоединился к игре!")
+        notify_players_joined()
+
+def notify_players_joined():
+    player_names = [info["name"] for info in players.values()]
+    bot.send_message(list(players.keys())[0], f"Игроки, присоединившиеся к игре: {', '.join(player_names)}")
 
 @bot.message_handler(func=lambda message: message.text == 'Завершить игру')
 def end_game(message):
